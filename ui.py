@@ -95,7 +95,14 @@ ABOUT_TEXT = (
     "Sign interpretation:\n"
     "negative loss_db => |x| < 1 (attenuation)\n"
     "zero loss_db => |x| = 1\n"
-    "positive loss_db => |x| > 1 (effective gain/non-passive)"
+    "positive loss_db => |x| > 1 (effective gain/non-passive)\n\n"
+    "Absorption metric definitions:\n"
+    "metal_absorption_pct = 100 * (1 - |Gamma_metal|^2)\n"
+    "air_absorption_pct = 100 * (1 - |Gamma_air|^2 - |S21|^2)\n\n"
+    "Metal absorption: fraction of incident power absorbed\n"
+    "by the stack on a PEC ground plane (0-100%).\n"
+    "Air absorption: fraction absorbed by a free-standing\n"
+    "slab in air (accounts for both reflection and transmission)."
 )
 
 LIGHT_THEME = {
@@ -185,8 +192,10 @@ DARK_THEME = {
 HEATMAP_METRIC_OPTIONS = [
     ("Metal backed loss (dB)", "metal_loss_db"),
     ("Metal phase (deg)", "metal_phase_deg"),
+    ("Metal absorption (%)", "metal_absorption_pct"),
     ("Air backed loss (dB)", "air_loss_db"),
     ("Air phase (deg)", "air_phase_deg"),
+    ("Air absorption (%)", "air_absorption_pct"),
     ("Insertion loss (dB)", "insertion_loss_db"),
     ("Insertion phase (deg)", "insertion_phase_deg"),
 ]
@@ -1495,15 +1504,18 @@ class ImpedanceGui(tk.Tk):
         air = out["air_loss_db"]
         ins = out["insertion_loss_db"]
         phase = out["metal_phase_deg"]
+        metal_abs = out["metal_absorption_pct"]
 
         all_metal = [v for row in metal for v in row]
         all_air = [v for row in air for v in row]
         all_ins = [v for row in ins for v in row]
         all_phase = [v for row in phase for v in row]
+        all_metal_abs = [v for row in metal_abs for v in row]
         metal_mean, metal_min, metal_max = self._stats(all_metal)
         air_mean, air_min, air_max = self._stats(all_air)
         ins_mean, ins_min, ins_max = self._stats(all_ins)
         phase_mean, phase_min, phase_max = self._stats(all_phase)
+        abs_mean, abs_min, abs_max = self._stats(all_metal_abs)
 
         band_threshold = -10.0
         best_bw = 0.0
@@ -1529,6 +1541,7 @@ class ImpedanceGui(tk.Tk):
             f"Mode: angle-frequency heatmap ({wave_pol.upper()}) | Uncertainty: {unc_state}\n"
             f"Grid: {len(freqs)} freq x {len(angles)} angle points\n"
             f"Metal loss dB mean/min/max: {metal_mean:.3f} / {metal_min:.3f} / {metal_max:.3f}\n"
+            f"Metal absorption % mean/min/max: {abs_mean:.1f} / {abs_min:.1f} / {abs_max:.1f}\n"
             f"Air loss dB mean/min/max: {air_mean:.3f} / {air_min:.3f} / {air_max:.3f}\n"
             f"Insertion loss dB mean/min/max: {ins_mean:.3f} / {ins_min:.3f} / {ins_max:.3f}\n"
             f"Metal phase deg mean/min/max: {phase_mean:.3f} / {phase_min:.3f} / {phase_max:.3f}\n"
@@ -1550,16 +1563,19 @@ class ImpedanceGui(tk.Tk):
         air = metrics["air_loss_db"]
         ins = metrics["insertion_loss_db"]
         phase = metrics["metal_phase_deg"]
+        metal_abs = metrics["metal_absorption_pct"]
         metal_mean, metal_min, metal_max = self._stats(metal)
         air_mean, air_min, air_max = self._stats(air)
         ins_mean, ins_min, ins_max = self._stats(ins)
         phase_mean, phase_min, phase_max = self._stats(phase)
+        abs_mean, abs_min, abs_max = self._stats(metal_abs)
         bw10 = self._max_contiguous_bandwidth(sweep, metal, -10.0)
         unc_state = "ON" if uncertainty_enabled else "OFF"
         return (
             f"Mode: frequency sweep ({wave_pol.upper()}, backing={backing}) | Uncertainty: {unc_state}\n"
             f"Points: {len(sweep)}\n"
             f"Metal loss dB mean/min/max: {metal_mean:.3f} / {metal_min:.3f} / {metal_max:.3f}\n"
+            f"Metal absorption % mean/min/max: {abs_mean:.1f} / {abs_min:.1f} / {abs_max:.1f}\n"
             f"Air loss dB mean/min/max: {air_mean:.3f} / {air_min:.3f} / {air_max:.3f}\n"
             f"Insertion loss dB mean/min/max: {ins_mean:.3f} / {ins_min:.3f} / {ins_max:.3f}\n"
             f"Metal phase deg mean/min/max: {phase_mean:.3f} / {phase_min:.3f} / {phase_max:.3f}\n"

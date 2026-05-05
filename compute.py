@@ -454,6 +454,8 @@ def compute_angle_metrics_many(
             "air_phase_deg": [],
             "insertion_loss_db": [],
             "insertion_phase_deg": [],
+            "metal_absorption_pct": [],
+            "air_absorption_pct": [],
         }
 
     if not NUMPY_AVAILABLE:
@@ -476,6 +478,8 @@ def compute_angle_metrics_many(
             "air_phase_deg": [r["air_phase_deg"] for r in rows],
             "insertion_loss_db": [r["insertion_loss_db"] for r in rows],
             "insertion_phase_deg": [r["insertion_phase_deg"] for r in rows],
+            "metal_absorption_pct": [r["metal_absorption_pct"] for r in rows],
+            "air_absorption_pct": [r["air_absorption_pct"] for r in rows],
         }
 
     theta = math.radians(theta_deg)
@@ -553,6 +557,9 @@ def compute_angle_metrics_many(
     den = a + b / z0 + c * z0 + d
     s21 = 2.0 / den
 
+    metal_abs = 100.0 * (1.0 - np.abs(gamma_metal) ** 2)
+    air_abs = 100.0 * (1.0 - np.abs(gamma_air) ** 2 - np.abs(s21) ** 2)
+
     return {
         "metal_loss_db": _db_from_mag_many(gamma_metal).tolist(),
         "metal_phase_deg": np.degrees(np.angle(gamma_metal)).tolist(),
@@ -560,6 +567,8 @@ def compute_angle_metrics_many(
         "air_phase_deg": np.degrees(np.angle(gamma_air)).tolist(),
         "insertion_loss_db": _db_from_mag_many(s21).tolist(),
         "insertion_phase_deg": np.degrees(np.angle(s21)).tolist(),
+        "metal_absorption_pct": metal_abs.tolist(),
+        "air_absorption_pct": air_abs.tolist(),
     }
 
 
@@ -620,4 +629,6 @@ def compute_angle_metrics(
         "air_phase_deg": math.degrees(cmath.phase(gamma_air)),
         "insertion_loss_db": _db_from_mag(s21),
         "insertion_phase_deg": math.degrees(cmath.phase(s21)),
+        "metal_absorption_pct": 100.0 * (1.0 - abs(gamma_metal) ** 2),
+        "air_absorption_pct": 100.0 * (1.0 - abs(gamma_air) ** 2 - abs(s21) ** 2),
     }
