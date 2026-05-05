@@ -97,12 +97,12 @@ ABOUT_TEXT = (
     "zero loss_db => |x| = 1\n"
     "positive loss_db => |x| > 1 (effective gain/non-passive)\n\n"
     "Absorption metric definitions:\n"
-    "metal_absorption_pct = 100 * (1 - |Gamma_metal|^2)\n"
-    "air_absorption_pct = 100 * (1 - |Gamma_air|^2 - |S21|^2)\n\n"
-    "Metal absorption: fraction of incident power absorbed\n"
-    "by the stack on a PEC ground plane (0-100%).\n"
-    "Air absorption: fraction absorbed by a free-standing\n"
-    "slab in air (accounts for both reflection and transmission)."
+    "metal_absorption_db = 10*log10(1 - |Gamma_metal|^2)\n"
+    "air_absorption_db = 10*log10(1 - |Gamma_air|^2 - |S21|^2)\n\n"
+    "Metal absorption: power absorbed by the stack on a\n"
+    "PEC ground plane in dB (0 dB = perfect absorption).\n"
+    "Air absorption: power absorbed by a free-standing\n"
+    "slab in dB (accounts for both reflection and transmission)."
 )
 
 LIGHT_THEME = {
@@ -192,10 +192,10 @@ DARK_THEME = {
 HEATMAP_METRIC_OPTIONS = [
     ("Metal backed loss (dB)", "metal_loss_db"),
     ("Metal phase (deg)", "metal_phase_deg"),
-    ("Metal absorption (%)", "metal_absorption_pct"),
+    ("Metal absorption (dB)", "metal_absorption_db"),
     ("Air backed loss (dB)", "air_loss_db"),
     ("Air phase (deg)", "air_phase_deg"),
-    ("Air absorption (%)", "air_absorption_pct"),
+    ("Air absorption (dB)", "air_absorption_db"),
     ("Insertion loss (dB)", "insertion_loss_db"),
     ("Insertion phase (deg)", "insertion_phase_deg"),
 ]
@@ -1504,7 +1504,7 @@ class ImpedanceGui(tk.Tk):
         air = out["air_loss_db"]
         ins = out["insertion_loss_db"]
         phase = out["metal_phase_deg"]
-        metal_abs = out["metal_absorption_pct"]
+        metal_abs = out["metal_absorption_db"]
 
         all_metal = [v for row in metal for v in row]
         all_air = [v for row in air for v in row]
@@ -1541,7 +1541,7 @@ class ImpedanceGui(tk.Tk):
             f"Mode: angle-frequency heatmap ({wave_pol.upper()}) | Uncertainty: {unc_state}\n"
             f"Grid: {len(freqs)} freq x {len(angles)} angle points\n"
             f"Metal loss dB mean/min/max: {metal_mean:.3f} / {metal_min:.3f} / {metal_max:.3f}\n"
-            f"Metal absorption % mean/min/max: {abs_mean:.1f} / {abs_min:.1f} / {abs_max:.1f}\n"
+            f"Metal absorption dB mean/min/max: {abs_mean:.3f} / {abs_min:.3f} / {abs_max:.3f}\n"
             f"Air loss dB mean/min/max: {air_mean:.3f} / {air_min:.3f} / {air_max:.3f}\n"
             f"Insertion loss dB mean/min/max: {ins_mean:.3f} / {ins_min:.3f} / {ins_max:.3f}\n"
             f"Metal phase deg mean/min/max: {phase_mean:.3f} / {phase_min:.3f} / {phase_max:.3f}\n"
@@ -1563,7 +1563,7 @@ class ImpedanceGui(tk.Tk):
         air = metrics["air_loss_db"]
         ins = metrics["insertion_loss_db"]
         phase = metrics["metal_phase_deg"]
-        metal_abs = metrics["metal_absorption_pct"]
+        metal_abs = metrics["metal_absorption_db"]
         metal_mean, metal_min, metal_max = self._stats(metal)
         air_mean, air_min, air_max = self._stats(air)
         ins_mean, ins_min, ins_max = self._stats(ins)
@@ -1575,7 +1575,7 @@ class ImpedanceGui(tk.Tk):
             f"Mode: frequency sweep ({wave_pol.upper()}, backing={backing}) | Uncertainty: {unc_state}\n"
             f"Points: {len(sweep)}\n"
             f"Metal loss dB mean/min/max: {metal_mean:.3f} / {metal_min:.3f} / {metal_max:.3f}\n"
-            f"Metal absorption % mean/min/max: {abs_mean:.1f} / {abs_min:.1f} / {abs_max:.1f}\n"
+            f"Metal absorption dB mean/min/max: {abs_mean:.3f} / {abs_min:.3f} / {abs_max:.3f}\n"
             f"Air loss dB mean/min/max: {air_mean:.3f} / {air_min:.3f} / {air_max:.3f}\n"
             f"Insertion loss dB mean/min/max: {ins_mean:.3f} / {ins_min:.3f} / {ins_max:.3f}\n"
             f"Metal phase deg mean/min/max: {phase_mean:.3f} / {phase_min:.3f} / {phase_max:.3f}\n"
@@ -2600,8 +2600,10 @@ class ImpedanceGui(tk.Tk):
         ang = out["angle_deg"]
         metal_loss = out["metal_loss_db"]
         metal_phase = out["metal_phase_deg"]
+        metal_abs = out["metal_absorption_db"]
         air_loss = out["air_loss_db"]
         air_phase = out["air_phase_deg"]
+        air_abs = out["air_absorption_db"]
         insertion_loss = out["insertion_loss_db"]
         insertion_phase = out["insertion_phase_deg"]
 
@@ -2612,15 +2614,18 @@ class ImpedanceGui(tk.Tk):
                         "frequency_GHz angle_deg "
                         "metal_loss_db metal_loss_db_min metal_loss_db_max "
                         "metal_phase_deg metal_phase_deg_min metal_phase_deg_max "
+                        "metal_absorption_db metal_absorption_db_min metal_absorption_db_max "
                         "air_loss_db air_loss_db_min air_loss_db_max "
                         "air_phase_deg air_phase_deg_min air_phase_deg_max "
+                        "air_absorption_db air_absorption_db_min air_absorption_db_max "
                         "insertion_loss_db insertion_loss_db_min insertion_loss_db_max "
                         "insertion_phase_deg insertion_phase_deg_min insertion_phase_deg_max\n"
                     )
                 else:
                     f.write(
-                        "frequency_GHz angle_deg metal_loss_db metal_phase_deg "
-                        "air_loss_db air_phase_deg insertion_loss_db insertion_phase_deg\n"
+                        "frequency_GHz angle_deg metal_loss_db metal_phase_deg metal_absorption_db "
+                        "air_loss_db air_phase_deg air_absorption_db "
+                        "insertion_loss_db insertion_phase_deg\n"
                     )
             for i, f_ghz in enumerate(freq):
                 for j, a in enumerate(ang):
@@ -2633,10 +2638,14 @@ class ImpedanceGui(tk.Tk):
                             f"{envelope_min['metal_loss_db'][i][j]:.12g} {envelope_max['metal_loss_db'][i][j]:.12g} "
                             f"{metal_phase[i][j]:.12g} "
                             f"{envelope_min['metal_phase_deg'][i][j]:.12g} {envelope_max['metal_phase_deg'][i][j]:.12g} "
+                            f"{metal_abs[i][j]:.12g} "
+                            f"{envelope_min['metal_absorption_db'][i][j]:.12g} {envelope_max['metal_absorption_db'][i][j]:.12g} "
                             f"{air_loss[i][j]:.12g} "
                             f"{envelope_min['air_loss_db'][i][j]:.12g} {envelope_max['air_loss_db'][i][j]:.12g} "
                             f"{air_phase[i][j]:.12g} "
                             f"{envelope_min['air_phase_deg'][i][j]:.12g} {envelope_max['air_phase_deg'][i][j]:.12g} "
+                            f"{air_abs[i][j]:.12g} "
+                            f"{envelope_min['air_absorption_db'][i][j]:.12g} {envelope_max['air_absorption_db'][i][j]:.12g} "
                             f"{insertion_loss[i][j]:.12g} "
                             f"{envelope_min['insertion_loss_db'][i][j]:.12g} {envelope_max['insertion_loss_db'][i][j]:.12g} "
                             f"{insertion_phase[i][j]:.12g} "
@@ -2645,8 +2654,8 @@ class ImpedanceGui(tk.Tk):
                     else:
                         f.write(
                             f"{f_ghz:.12g} {a:.12g} "
-                            f"{metal_loss[i][j]:.12g} {metal_phase[i][j]:.12g} "
-                            f"{air_loss[i][j]:.12g} {air_phase[i][j]:.12g} "
+                            f"{metal_loss[i][j]:.12g} {metal_phase[i][j]:.12g} {metal_abs[i][j]:.12g} "
+                            f"{air_loss[i][j]:.12g} {air_phase[i][j]:.12g} {air_abs[i][j]:.12g} "
                             f"{insertion_loss[i][j]:.12g} {insertion_phase[i][j]:.12g}\n"
                         )
 
